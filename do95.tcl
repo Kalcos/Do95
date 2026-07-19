@@ -236,6 +236,11 @@ foreach path $steampaths {
 	set common [file join $path steamapps common]
 
 	lappend testpaths [file join $common "Ultimate Doom" base]
+	lappend testpaths [file join $common "Ultimate Doom" base doom2]
+	lappend testpaths [file join $common "Ultimate Doom" base plutonia]
+	lappend testpaths [file join $common "Ultimate Doom" base tnt]
+	lappend testpaths [file join $common "Master Levels of Doom" doom2]
+	lappend testpaths [file join $common "Ultimate Doom" rerelease]
 	lappend testpaths [file join $common "Doom 2" base]
 	lappend testpaths [file join $common "Final Doom" base]
 	lappend testpaths [file join $common "DOOM 3 BFG Edition" base wads]
