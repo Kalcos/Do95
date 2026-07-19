@@ -513,6 +513,7 @@ set exes [list \
 	odamex \
 	doom2 \
 	doom \
+	doom95 \
 ]
 
 dict set exe_params chocolate-doom dedicated dedicated
@@ -799,18 +800,28 @@ proc iwad_cmd {} {
 iwad_cmd
 
 proc pwad_browse_cmd {} {
-	global pwad_paths
+    global pwad_paths
+    global exes  ;
 
-	set paths [tk_getOpenFile -multiple 1 -filetypes {{{Doom WAD File} {.WAD .wad .Wad}}}]
-	if {$paths == ""} { return }
+    set paths [tk_getOpenFile -multiple 1 -filetypes {{{Doom WAD File} {.WAD .wad .Wad}}}]
+    if {$paths == ""} { return }
 
-	set ::options::pwads [list]
-	set lastpath "."
+    if {$exes eq "doom95"} {
+        set fixedPaths {}
+        foreach path $paths {
+            lappend fixedPaths [string map {"\\" "\\\\"} $path]
+        }
+        set paths $fixedPaths
+    }
 
-	foreach path $paths {
-		lappend ::options::pwads [file rootname [file tail $path]]
-		set lastpath $path
-	}
+    set ::options::pwads [list]
+    set lastpath "."
+
+    foreach path $paths {
+        lappend ::options::pwads [file rootname [file tail $path]]
+        set lastpath $path
+    }
+
 
 	set pwad_paths [dict create]
 	dict set pwad_paths (NONE) ""
@@ -1008,9 +1019,13 @@ proc newgame_cmd {} {
 	set params [list]
 
 	if {[dict exists $iwad_paths $::options::iwad]} {
-		lappend params "-iwad"
-		lappend params [dict get $iwad_paths $::options::iwad]
-	}
+    if {$exename eq "doom95"} {
+        lappend params "-basewad"
+    } else {
+        lappend params "-iwad"
+    }
+    lappend params [dict get $iwad_paths $::options::iwad]
+}
 
 	if {$::options::pwads != "(NONE)"} {
 		lappend params "-file"
@@ -1135,7 +1150,10 @@ proc newgame_cmd {} {
 		}
 	}
 
-
+	if {[string match -nocase "*doom95*" [file tail $exefile]]} {
+    lappend params -nodm
+	}
+	
 	catch {exec $exefile {*}$params &}
 	#puts $exefile
 	#puts $params
