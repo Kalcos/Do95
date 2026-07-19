@@ -244,20 +244,20 @@ foreach path $steampaths {
 	lappend testpaths [file join $common "Doom 2" base]
 	lappend testpaths [file join $common "Final Doom" base]
 	lappend testpaths [file join $common "DOOM 3 BFG Edition" base wads]
-}
+	}
 
 set iwad_paths [dict create]
 set pwad_paths [dict create]
 
 foreach wadname $wadnames {
-	foreach startpath $testpaths {
-		set path [file join $startpath $wadname.WAD]
+    foreach startpath $testpaths {
+        set path [file join $startpath $wadname.WAD]
 
-		if {[file exists $path]} {
-			dict set iwad_paths $wadname $path
-			break
-		}
-	}
+        if {[file exists $path]} {
+            dict set iwad_paths $wadname [file tail $path]
+            break
+        }
+    }
 }
 
 proc get_gzdoom_save_desc {filename} {
@@ -459,7 +459,7 @@ proc get_demonames {} {
 	dict set demonames (NONE) ""
 	if { [catch {set demofiles [glob -directory $demopath *.LMP *.lmp *.Lmp]}] == 0} {
 		foreach path $demofiles {
-			dict set demonames [file rootname [file tail $path]] $path
+			dict set demonames [file rootname [file tail $path]] [file tail $path]
 		}
 	}
 }
@@ -513,7 +513,7 @@ set exes [list \
 	odamex \
 	doom2 \
 	doom \
-	doom95 \
+        doom95 \
 ]
 
 dict set exe_params chocolate-doom dedicated dedicated
@@ -822,16 +822,14 @@ proc pwad_browse_cmd {} {
         set lastpath $path
     }
 
+    set pwad_paths [dict create]
+    dict set pwad_paths (NONE) ""
+    foreach path [glob -directory [file dirname $lastpath] *.WAD .wad .Wad] {
+        dict set pwad_paths [file rootname [file tail $path]] $path
+    }
 
-	set pwad_paths [dict create]
-	dict set pwad_paths (NONE) ""
-	foreach path [glob -directory [file dirname $lastpath] *.WAD .wad .Wad] {
-		dict set pwad_paths [file rootname [file tail $path]] $path
-	}
-
-	.c.gp.pwadbar.pwad configure -values [dict keys $pwad_paths] -state readonly
+    .c.gp.pwadbar.pwad configure -values [dict keys $pwad_paths] -state readonly
 }
-
 namespace eval adv_options {
 	variable loadgame
 	variable timer_enabled
@@ -1004,7 +1002,14 @@ proc adv_ok_cmd {} {
 }
 
 proc config_cmd {} {
-	tk_messageBox -icon info -type ok -message "This hasn't been implemented.\nTry the setup program instead." -title TODO
+    global exefile
+
+    if {$exefile eq "" || ![file exists $exefile]} {
+        tk_messageBox -icon error -type ok -message "Doom95 executable not found."
+        return
+    }
+
+    exec $exefile &
 }
 
 proc newgame_cmd {} {
@@ -1026,6 +1031,7 @@ proc newgame_cmd {} {
     }
     lappend params [dict get $iwad_paths $::options::iwad]
 }
+
 
 	if {$::options::pwads != "(NONE)"} {
 		lappend params "-file"
@@ -1110,7 +1116,7 @@ proc newgame_cmd {} {
 
 	if {$::options::playdemo != ""} {
 		lappend params "-playdemo"
-		lappend params [dict get $demonames $::options::playdemo]
+		lappend params $::options::playdemo
 	}
 
 	if {$::options::gametype != "Single Player Game"} {
@@ -1118,6 +1124,7 @@ proc newgame_cmd {} {
 			if {[catch {dict get $exe_params $exename dedicated} param] == 0} {
 				lappend params -$param
 			}
+	
 		} elseif {$::options::server != 0} {
 			if {[catch {dict get $exe_params $exename server} param] == 0} {
 				lappend params -$param
@@ -1150,10 +1157,11 @@ proc newgame_cmd {} {
 		}
 	}
 
+
 	if {[string match -nocase "*doom95*" [file tail $exefile]]} {
     lappend params -nodm
-	}
-	
+}
+
 	catch {exec $exefile {*}$params &}
 	#puts $exefile
 	#puts $params
